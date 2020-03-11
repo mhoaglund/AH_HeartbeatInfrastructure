@@ -161,6 +161,10 @@ bool awaitTrio(long timing){
     if(trio[x] == 0){
       emptycount++;
     }
+    //We have two beats but they're more than 3 seconds apart. Unrelated.
+    if(trio[x] > 3000){
+      return false;
+    }
   }
   if(emptycount == 0){
     //TODO we have a trio, so determine spacing between the three beats
@@ -171,9 +175,9 @@ bool awaitTrio(long timing){
       //clearTrio();
       Serial.println("Got three repeating beats.");
       Serial.print(trio[0]);
-      Serial.print(" : ")
+      Serial.print(" : ");
       Serial.print(trio[1]);
-      Serial.print(" : ")
+      Serial.print(" : ");
       Serial.print(trio[2]);
       return true;
     } else {
