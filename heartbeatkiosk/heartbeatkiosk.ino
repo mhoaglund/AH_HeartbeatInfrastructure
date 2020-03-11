@@ -42,9 +42,9 @@ void setup() {
   pinMode(10, OUTPUT);
   pinMode(11, OUTPUT);
   pinMode(13, OUTPUT);
-  digitalWrite(10, LOW); //forward
-  digitalWrite(11, HIGH); //forward
-  analogWrite(5, 75); //pin 3 is PWM, 178/255 = (about) 70% speed. Max is 255.
+  digitalWrite(10, LOW);
+  digitalWrite(11, HIGH);
+  analogWrite(5, 75);
   clearTrio();
 }
 
@@ -60,7 +60,6 @@ void loop() {
     // Serial.print(sensorValue, DEC);
     // Serial.print("::");
     // Serial.println(average);
-    //updateBeatState(sensorValue, currentMillis, beatThreshold);
     updateBeatState(delta, currentMillis, sense_threshold);
   }
 }
@@ -167,12 +166,10 @@ bool awaitTrio(long timing){
     }
   }
   if(emptycount == 0){
-    //TODO we have a trio, so determine spacing between the three beats
     long firstdiff = abs(trio[0]-trio[1]);
     long seconddiff = abs(trio[1]-trio[2]);
     long diffdiff = abs(firstdiff - seconddiff);
     if(diffdiff < beatTolerance){
-      //clearTrio();
       Serial.println("Got three repeating beats.");
       Serial.print(trio[0]);
       Serial.print(" : ");
@@ -181,7 +178,6 @@ bool awaitTrio(long timing){
       Serial.print(trio[2]);
       return true;
     } else {
-      //clearTrio();
       return false;
     }
   }
@@ -193,7 +189,6 @@ void clearTrio(){
   }
 }
 
-//March all values of an array back a step, overwriting the first value and adding a new value at the end
 void marchArray(long _value, int _arrsize, long _arr[]){
   for (int x = 0; x < _arrsize-1; x++) {
     _arr[x] = _arr[x+1];
@@ -204,18 +199,13 @@ void marchArray(long _value, int _arrsize, long _arr[]){
 void updateRunningAverage(int _input, int _avgarr[], int _samples, int& _targetavg, int& _targetind, int& _targettotal){
   _targettotal = _targettotal - _avgarr[_targetind];
   _avgarr[_targetind] = _input;
-  // add the reading to the total:
   _targettotal = _targettotal + _avgarr[_targetind];
-  // advance to the next position in the array:
   _targetind = _targetind + 1;
 
-  // if we're at the end of the array...
   if (_targetind >= _samples) {
-    // ...wrap around to the beginning:
     _targetind = 0;
   }
 
-  // calculate the average:
   _targetavg = _targettotal / _samples;
 }
 
@@ -224,5 +214,3 @@ void clearAvg(int _avgarr[], int _arrsize){
     _avgarr[thisReading] = 0;
   }
 }
-
-//TODO: set up a running average of BPM values so we can listen for a ramp-up.
