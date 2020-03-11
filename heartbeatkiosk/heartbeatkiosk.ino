@@ -8,6 +8,7 @@ long checktime = 35;
 long previousMillis = 0;
 double factor = 0.5;
 
+long beatTolerance = 500;
 int beatThreshold = 350;
 int beatValue = 0;
 long beatTimeStamp = 0;
@@ -32,20 +33,19 @@ int sense_threshold = 75;
 int inputPin = A0;
 
 void setup() {
-Serial.begin(9600);
-
-for (int thisReading = 0; thisReading < numReadings; thisReading++) {
-  readings[thisReading] = 0;
-}
-  
-pinMode(5, OUTPUT);
-pinMode(10, OUTPUT);
-pinMode(11, OUTPUT);
-pinMode(13, OUTPUT);
-digitalWrite(10, LOW); //forward
-digitalWrite(11, HIGH); //forward
-analogWrite(5, 75); //pin 3 is PWM, 178/255 = (about) 70% speed. Max is 255.
-
+  Serial.begin(9600);
+  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
+    readings[thisReading] = 0;
+  }
+    
+  pinMode(5, OUTPUT);
+  pinMode(10, OUTPUT);
+  pinMode(11, OUTPUT);
+  pinMode(13, OUTPUT);
+  digitalWrite(10, LOW); //forward
+  digitalWrite(11, HIGH); //forward
+  analogWrite(5, 75); //pin 3 is PWM, 178/255 = (about) 70% speed. Max is 255.
+  clearTrio();
 }
 
 void loop() {
@@ -57,9 +57,9 @@ void loop() {
     updateRunningAverage(sensorValue, readings, numReadings, average, readIndex, total);
     //Average is now set.
     delta = sensorValue - average;
-    Serial.print(sensorValue, DEC);
-    Serial.print("::");
-    Serial.println(average);
+    // Serial.print(sensorValue, DEC);
+    // Serial.print("::");
+    // Serial.println(average);
     //updateBeatState(sensorValue, currentMillis, beatThreshold);
     updateBeatState(delta, currentMillis, sense_threshold);
   }
@@ -78,8 +78,9 @@ void updateBeatState(int _input, long _timestamp, int _threshold){
     downTime = _timestamp;
     if(isInSession){
        if(downTime - beatTimeStamp >= maxDownTime){
-       //We've been in a low state for more than 15 seconds. End visitor session and go back to default behavior.
+       //We've been in a low state for more than maxdowntime/1000 seconds. End visitor session and go back to default behavior.
        cycleSession(false);
+       clearTrio();
       }
     }
   }
@@ -88,17 +89,12 @@ void updateBeatState(int _input, long _timestamp, int _threshold){
     //Start by measuring change in time:
     if(temp == true){
        digitalWrite(13, HIGH);
-       downTime = 0; //Reset downtime
+       downTime = 0;
        long lastBeatDuration = _timestamp - beatTimeStamp;
-       //The time between the most recent beat and the current one is more than 8 seconds.
-       //Must be a new visitor or a new session.
-       //if(lastBeatDuration > maxBeatTime || beatTimeStamp == 0){
-       //  cycleSession(true);
-       //}
-       //If there's a beat, there's a visitor.
-       //TODO: debounce this by waiting for 2 or 3 beats to get recorded before activating session.
        if(!isInSession){
-        cycleSession(true);
+         if(awaitTrio(lastBeatDuration)){
+           cycleSession(true);
+         }
        }
        beatTimeStamp = _timestamp;
        integrate(lastBeatDuration);
@@ -151,6 +147,54 @@ void cycleSession(bool endstate){
   } else {
     Serial.println("Ending Session");
   }
+}
+
+long trio[3];  
+
+//We need to filter out env. disturbances.
+//We know it's a heartbeat if we see three of them in repeating time.
+bool awaitTrio(long timing){
+  marchArray(timing, 3, trio);
+  byte emptycount = 0;
+  //Make sure we don't get a false positive from 0s
+  for (int x = 0; x < 3; x++) {
+    if(trio[x] == 0){
+      emptycount++;
+    }
+  }
+  if(emptycount == 0){
+    //TODO we have a trio, so determine spacing between the three beats
+    long firstdiff = abs(trio[0]-trio[1]);
+    long seconddiff = abs(trio[1]-trio[2]);
+    long diffdiff = abs(firstdiff - seconddiff);
+    if(diffdiff < beatTolerance){
+      //clearTrio();
+      Serial.println("Got three repeating beats.");
+      Serial.print(trio[0]);
+      Serial.print(" : ")
+      Serial.print(trio[1]);
+      Serial.print(" : ")
+      Serial.print(trio[2]);
+      return true;
+    } else {
+      //clearTrio();
+      return false;
+    }
+  }
+}
+
+void clearTrio(){
+  for (int x = 0; x < 3; x++) {
+    trio[x] = 0;
+  }
+}
+
+//March all values of an array back a step, overwriting the first value and adding a new value at the end
+void marchArray(long _value, int _arrsize, long _arr[]){
+  for (int x = 0; x < _arrsize-1; x++) {
+    _arr[x] = _arr[x+1];
+  }
+  _arr[_arrsize-1] = _value;
 }
 
 void updateRunningAverage(int _input, int _avgarr[], int _samples, int& _targetavg, int& _targetind, int& _targettotal){
