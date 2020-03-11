@@ -2,7 +2,8 @@
 //Reversing the outputs of 10 and 11 control direction.
 
 int currentBPM = 20;
-int basePWM = 55;
+int basePWM = 110;
+int basalPWM = 90;
 long checktime = 35;
 long previousMillis = 0;
 double factor = 0.5;
@@ -12,7 +13,7 @@ int beatValue = 0;
 long beatTimeStamp = 0;
 long maxBeatTime = 8000;
 long downTime = 0;
-long maxDownTime = 5000;
+long maxDownTime = 2000;
 bool beatState = false;
 int BPMinc = 1;
 
@@ -134,10 +135,10 @@ void integrate(long timing){
 void updateRPM(){
   //Take in BPM value, map to PWM range
   if(isInSession){
-      int pwmval = map(currentBPM, 35, 150, basePWM, 255);
+      int pwmval = map(currentBPM, 45, 150, basePWM, 255);
       analogWrite(5, pwmval);
   } else {
-      analogWrite(5, 0);
+      analogWrite(5, basalPWM);
   }
 
 }
