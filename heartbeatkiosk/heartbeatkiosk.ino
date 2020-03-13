@@ -8,7 +8,7 @@ long checktime = 35;
 long previousMillis = 0;
 double factor = 0.5;
 
-long beatTolerance = 500;
+long beatTolerance = 250;
 int beatThreshold = 350;
 int beatValue = 0;
 long beatTimeStamp = 0;
@@ -44,7 +44,7 @@ void setup() {
   pinMode(13, OUTPUT);
   digitalWrite(10, LOW);
   digitalWrite(11, HIGH);
-  analogWrite(5, 75);
+  analogWrite(5, basalPWM);
   clearTrio();
 }
 
@@ -91,7 +91,7 @@ void updateBeatState(int _input, long _timestamp, int _threshold){
        downTime = 0;
        long lastBeatDuration = _timestamp - beatTimeStamp;
        if(!isInSession){
-         if(awaitTrio(lastBeatDuration)){
+         if(awaitTrio(lastBeatDuration) == true){
            cycleSession(true);
          }
        }
@@ -144,6 +144,7 @@ void cycleSession(bool endstate){
   if(endstate){
     Serial.println("New Session");
   } else {
+    clearTrio();
     Serial.println("Ending Session");
   }
 }
@@ -169,13 +170,17 @@ bool awaitTrio(long timing){
     long firstdiff = abs(trio[0]-trio[1]);
     long seconddiff = abs(trio[1]-trio[2]);
     long diffdiff = abs(firstdiff - seconddiff);
-    if(diffdiff < beatTolerance){
+    if(firstdiff < beatTolerance && seconddiff < beatTolerance && diffdiff < beatTolerance){
       Serial.println("Got three repeating beats.");
       Serial.print(trio[0]);
       Serial.print(" : ");
       Serial.print(trio[1]);
       Serial.print(" : ");
       Serial.print(trio[2]);
+      Serial.println("Diffs: ");
+      Serial.print(firstdiff);
+      Serial.print(" :: ");
+      Serial.print(seconddiff);
       return true;
     } else {
       return false;
