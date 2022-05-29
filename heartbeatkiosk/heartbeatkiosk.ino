@@ -2,8 +2,8 @@
 //Reversing the outputs of 10 and 11 control direction.
 
 int currentBPM = 20;
-int basePWM = 70;
-int maxPWM = 200;
+int basePWM = 70; //Control signal floor. Adjust for overall speed of reaction.
+int maxPWM = 200; //Control signal cieling. Adjust for overall speed of reaction.
 int basalPWM = 50;
 long checktime = 35;
 long previousMillis = 0;
